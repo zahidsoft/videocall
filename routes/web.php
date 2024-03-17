@@ -24,4 +24,6 @@ Route::middleware([
     })->name('dashboard');
 
     Route::get('user/chat', [ChatController::class, 'index'])->name('chat.index');
+    
 });
+Route::post('/chat/send-message', [ChatController::class, 'store'])->name('chat.send');

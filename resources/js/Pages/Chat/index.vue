@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ThreeDodIcon from '@/Components/Chat/ThreeDodIcon.vue';
+import axios  from "axios";
 
     function logout2() {
         console.log('logout')
@@ -11,6 +12,31 @@ import ThreeDodIcon from '@/Components/Chat/ThreeDodIcon.vue';
     function isChatOpen() {
         return  true;
     }
+    // Listen for new messages using Laravel Echo
+window.Echo.channel('chatroom')
+    .listen('.message.sent', (e) => {
+        console.log(e);
+        // Append the new message to the chatroom
+        const messages = document.getElementById('messages');
+        const messageElement = document.createElement('p');
+        messageElement.innerText = e.message;
+        messages.appendChild(messageElement);
+    });
+
+// Function to send a new message
+window.sendMessage = function() {
+    const messageInput = document.getElementById('messageInput');
+    const message = messageInput.value;
+    axios.post('/chat/send-message', { message: message })
+        .then(response => {
+            console.log(response.data);
+            // Clear the input field after sending
+            messageInput.value = '';
+        })
+        .catch(error => console.error(error));
+
+    console.log('sent message');
+};
 </script>
 
 <template>
@@ -126,7 +152,7 @@ import ThreeDodIcon from '@/Components/Chat/ThreeDodIcon.vue';
                                         </div>
                                         <div class="flex items-center justify-end mb-4">
                                             <three-dod-icon class="cursor-pointer w-3 h-3"></three-dod-icon>
-                                            <div class="relative group text-sm p-2 shadow bg-indigo-100 rounded-md max-w-xs">
+                                            <div id="messages" class="relative group text-sm p-2 shadow bg-indigo-100 rounded-md max-w-xs">
                                                 message show here
                                                 <div class="absolute top-0.5 -translate-y-0.5 right-full hidden group-hover:block mr-1 mt-1 bg-gray-600 py-1 px-1.5 rounded z-50 text-white w-max">12:22</div>
                                             </div>
@@ -137,8 +163,8 @@ import ThreeDodIcon from '@/Components/Chat/ThreeDodIcon.vue';
 
                                     <!-- chat footer  -->
                                     <div class="flex items-center p-5 bg-white rounded-bl-md rounded-br-md">
-                                        <input id="sendmessage" type="text" placeholder="write message" class="w-full p-2 rounded-md border border-gray-300 focus:outline-non focus:ring focus:border-blue-400">
-                                        <button class="bg-blue-600 text-white px-4 py-2 rounded-md disabled:bg-gray-400 ml-2" disabled>send</button>
+                                        <input id="messageInput" type="text" placeholder="write message" class="w-full p-2 rounded-md border border-gray-300 focus:outline-non focus:ring focus:border-blue-400">
+                                        <button onclick="sendMessage()" class="bg-blue-600 text-white px-4 py-2 rounded-md disabled:bg-gray-400 ml-2">send</button>
                                     </div>
                                 </div>
                                 
