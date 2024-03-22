@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Chat;
 
+use App\Models\User;
 use Inertia\Inertia;
 use App\Events\MessageSent;
 use Illuminate\Http\Request;
@@ -11,7 +12,8 @@ class ChatController extends Controller
 {
     public function index()
     {
-        return Inertia::render('Chat/index');
+        $users = User::all();
+        return Inertia::render('Chat/index', ['users' => $users]);
     }
 
     public function store(Request $request)
@@ -19,6 +21,6 @@ class ChatController extends Controller
         $message = $request->input('message');
 
         MessageSent::dispatch($message);
-        return response()->json(['success' => true, 'message' => 'Message sent successfully']);
+        return response()->json(['success' => true, 'message' => "Message sent successfully"]);
     }
 }

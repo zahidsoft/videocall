@@ -37,10 +37,13 @@ class MessageSent implements ShouldBroadcastNow
         ];
     }
 
-    public function broadcastAs(): string
-    {
-        return 'message.sent';
-    }
+    //if i write brodcastas function i need to .listner ('.message.sent')
+    //other wise event name is .listner('MessageSent')
+
+    // public function broadcastAs(): string
+    // {
+    //     return 'message.sent';
+    // }
 
     
 
