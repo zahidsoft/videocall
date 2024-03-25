@@ -22,7 +22,7 @@ const selectedUser = ref(null);
 const isChatOpen = ref(false);
 
 const openChat = (user) => {
-    selectedUser.value = user;
+    selectedUser.value = user;  //ekhanea ref use korsiee tokhon user data se handle korsea sei jonne selectedUser.value.id evabe likhetea hossea nah templater moddhea.
     isChatOpen.value = true;
 };
 
@@ -34,8 +34,11 @@ const chatClose = () => {
 window.sendMessage = function () {
     const messageInput = document.getElementById('messageInput');
     const message = messageInput.value;
+    const receiverId = selectedUser.value.id;
+    // console.log(userId);
     axios.post('/chat/send-message', {
-        message: message
+        message: message,
+        receiver_id: receiverId
     })
         .then(response => {
             console.log(response.data);
@@ -46,7 +49,10 @@ window.sendMessage = function () {
     console.log('sent message');
 };
 
-window.Echo.channel('chatroom')
+// const receiver_id = '{{ auth()->id }}';
+// console.log(receiver_id);
+
+window.Echo.private(`chatroom.2`)
     .listen('MessageSent', (e) => {
         console.log(e.message);
         // Append the new message to the chatroom
@@ -55,6 +61,15 @@ window.Echo.channel('chatroom')
         messageElement.innerText = e.message;
         messages.appendChild(messageElement);
     });
+// window.Echo.channel('chatroom.1')
+//     .listen('MessageSent', (e) => {
+//         console.log(e.message);
+//         // Append the new message to the chatroom
+//         const messages = document.getElementById('messages');
+//         const messageElement = document.createElement('p');
+//         messageElement.innerText = e.message;
+//         messages.appendChild(messageElement);
+//     });
 
 </script>
 
