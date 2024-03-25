@@ -10,4 +10,4 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 
 Broadcast::channel('chatroom.{receiver_id}', function ($user, $receiver_id) {  //$user is laravel build is variable jeta current user er data rakhe.
    return $user->id == $receiver_id;  //current userid ar event theke send kora id seme hole jekhan theke request korsea se message ta se pabe. 
-});
+}); //chatroom channel jekhan theke call hobe sekhan kar reciver id sob somoy kan pete sune thaksea keu kisu dissea ki nah dilei show korabe. 

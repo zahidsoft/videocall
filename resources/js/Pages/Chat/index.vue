@@ -3,7 +3,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import ThreeDodIcon from '@/Components/Chat/ThreeDodIcon.vue';
 import ChatHeader from '@/Pages/Chat/Partial/ChatHeader.vue';
 import axios from "axios";
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 
 function logout2() {
     console.log('logout')
@@ -15,7 +15,10 @@ function fileLink(file) {
 
 
 //recive users data as an arry in props so that vue component access array data
-defineProps({ users: Array })
+const props = defineProps({
+    users: Array,
+    authUserId: Number
+})
 
 const selectedUser = ref(null);
 
@@ -49,10 +52,10 @@ window.sendMessage = function () {
     console.log('sent message');
 };
 
-// const receiver_id = '{{ auth()->id }}';
-// console.log(receiver_id);
+const authUserId = props.authUserId;
+// console.log(authUserId);
 
-window.Echo.private(`chatroom.2`)
+window.Echo.private('chatroom.' + authUserId)  // ey sob somoy listen korea bosea asea k kokhon chatroom.1 ekisu dibe sathe sathea se show korbea. 
     .listen('MessageSent', (e) => {
         console.log(e.message);
         // Append the new message to the chatroom
@@ -77,7 +80,7 @@ window.Echo.private(`chatroom.2`)
     <AppLayout title="ChatApp">
         <template #header>
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                chat
+                chat Current user Id{{ authUserId }}
             </h2>
         </template>
 

@@ -7,13 +7,15 @@ use Inertia\Inertia;
 use App\Events\MessageSent;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class ChatController extends Controller
 {
     public function index()
     {
         $users = User::all();
-        return Inertia::render('Chat/index', ['users' => $users]);
+        $authUserId = Auth::user()->id;
+        return Inertia::render('Chat/index', ['users' => $users , 'authUserId' => $authUserId]);
     }
 
     public function store(Request $request)
