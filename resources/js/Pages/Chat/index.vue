@@ -80,7 +80,7 @@ window.Echo.private('chatroom.' + authUserId)  // ey sob somoy listen korea bose
     <AppLayout title="ChatApp">
         <template #header>
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                chat Current user Id{{ authUserId }}
+                chat Current user Id {{ authUserId }}
             </h2>
         </template>
 

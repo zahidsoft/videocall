@@ -26,4 +26,12 @@ class ChatController extends Controller
         MessageSent::dispatch($message, $receiver_id);
         return response()->json(['success' => true, 'message' => "$receiver_id Message sent successfully"]);
     }
+
+    //video chat index
+    public function video()
+    {
+        $users = User::all();
+        $authUserId = Auth::user()->id;
+        return Inertia::render('Chat/video', ['users' => $users , 'authUserId' => $authUserId]);
+    }
 }
