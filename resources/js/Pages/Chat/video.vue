@@ -4,6 +4,8 @@ import ThreeDodIcon from '@/Components/Chat/ThreeDodIcon.vue';
 import ChatHeader from '@/Pages/Chat/Partial/ChatHeader.vue';
 import { ref } from 'vue';
 import { Peer } from "https://esm.sh/peerjs@1.5.2?bundle-deps";
+import { Axios } from 'axios';
+import axios from 'axios';
 
 const props = defineProps({
   users: Array,
@@ -18,37 +20,45 @@ function fileLink(file) {
 
 const selectedUser = ref(null);
 const isChatOpen = ref(false);
-const peer = new Peer();
 
-let localStream;
-let remoteStream;
+const peer = new Peer({
+  config: {
+    'iceServers': [
+      { url: 'stun:stun.l.google.com:19302' },
+      { url: 'turn:homeo@turn.bistri.com:80', credential: 'homeo' }
+    ]
+  }
+});
 
 const openChat = (user) => {
   selectedUser.value = user;
   isChatOpen.value = true;
-  startVideoStream();
 };
 
 const chatClose = () => {
   isChatOpen.value = false;
-  stopVideoStream();
 };
 
+const userPeerId = ref(null);
 peer.on('open', (id) => {
   const peeridconnza = document.getElementById('peeridconnz');
   peeridconnza.innerText = id;
-  console.log('My peer ID is: ' + id);
+  userPeerId.value = id;
+  // console.log('My peer ID is: ' + id);
 });
+const localStream = ref(null);
+const remoteStream = ref(null);
 
 peer.on('call', (call) => {
   navigator.mediaDevices.getUserMedia({ video: true, audio: true })
     .then((stream) => {
-      localStream = stream;
+      localStream.value = stream;
       call.answer(stream); // Answer the call with an A/V stream.
+      // const remotestrm = remoteStream.value;
       call.on('stream', (remoteStream) => {
         // Show stream in some video/canvas element.
         const video = document.querySelector('.remote-video');
-        video.srcObject = remoteStream;
+        video.srcObject = remoteStream.vale;
         video.play();
       });
     })
@@ -57,30 +67,11 @@ peer.on('call', (call) => {
     });
 });
 
-window.connectToPeer = function () {
-  const peerIdEl = document.getElementById('connectpeerid');
-  const receive = peerIdEl.value;
-  console.log("Connecting to peer: " + receive);
-  const conn = peer.connect(receive);
-
-  conn.on('open', () => {
-    console.log('Connected to peer: ' + conn.peer);
-    // Request video call
-    startVideoStream();
-    const call = peer.call(conn.peer, localStream);
-    call.on('stream', (remoteStream) => {
-      // Show stream in some video/canvas element.
-      const video = document.querySelector('.remote-video');
-      video.srcObject = remoteStream;
-      video.play();
-    });
-  });
-};
-
+//start local video calling or start streaming
 function startVideoStream() {
   navigator.mediaDevices.getUserMedia({ video: true, audio: true })
     .then((stream) => {
-      localStream = stream;
+      localStream.value = stream;
       const video = document.querySelector('.local-video');
       video.srcObject = stream;
       video.play();
@@ -90,17 +81,48 @@ function startVideoStream() {
     });
 }
 
-function stopVideoStream() {
-  if (localStream) {
-    localStream.getTracks().forEach((track) => {
-      track.stop();
-    });
-  }
-}
 
-window.sendCall = function () {
-  // Implement calling functionality here
+
+// send peer id to receiver
+window.sendCallUser = function () {
+  // console.log(userPeerId.value)
+  startVideoStream();
+  axios.post('/video/chat/request', {
+    peer_id: userPeerId.value,
+    receiver_id: selectedUser.value.id
+  })
+    .then(response => {
+      console.log(response.data);
+    })
+    .catch(error => console.error(error));
+
 };
+
+//receive peer id from sender
+
+
+
+
+const authUserId = props.authUserId;
+window.Echo.private('videocall.' + authUserId)
+  .listen('SendCall', (e) => {
+    // console.log(e.peer_id);
+    startVideoStream();
+    const receiver = e.peer_id; //caller peer id
+    console.log("Connecting to peer: " + receiver);
+    const conn = peer.connect(receiver);  //made connection to other peer id
+    conn.on('open', () => {          // peerjs pre define event open. The open event is fired when the data connection is successfully opened between peers.
+      console.log('connected to peer:' + conn.peer);
+      const call = peer.call(conn.peer, localStream.value);  //localstream e errors asa get media stream //When the remote peer starts streaming their video, this event is triggered connection hobar por local stream ta calu kortea hobea
+      // const remotestrm = remoteStream.value;
+      call.on('stream', (remoteStream) => {  //predefined stream peer js event. eta tokhon calu hobea jokhon caller tar camera audio calu korbea.
+        const video = document.querySelector('.remote-video');
+        video.srcObject = remoteStream;
+        video.play();
+      });
+    });
+  });
+
 </script>
 
 <template>
@@ -191,10 +213,10 @@ window.sendCall = function () {
 
                     <!-- video will show here  -->
                     <div class="flex items-center justify-end mb-4">
-                      <video class="local-video" autoplay muted></video>
+                      <video width="320" height="240" class="local-video" autoplay muted></video>
                     </div>
                     <div class="flex items-center justify-end mb-4">
-                      <video class="remote-video" autoplay></video>
+                      <video width="320" height="240" class="remote-video" autoplay></video>
                     </div>
 
 
@@ -205,7 +227,7 @@ window.sendCall = function () {
                     <input id="connectpeerid" type="text" placeholder="connect-to-peer" class="w-full p-2 rounded-md border border-gray-300 focus:outline-non focus:ring focus:border-blue-400">
 
                     <button onclick="connectToPeer()" class="bg-blue-600 text-white px-4 py-2 rounded-md disabled:bg-gray-400 ml-2">Connect</button>
-                    <button onclick="sendCall()" class="bg-blue-600 text-white px-4 py-2 rounded-md disabled:bg-gray-400 ml-2">Call</button>
+                    <button onclick="sendCallUser()" class="bg-blue-600 text-white px-4 py-2 rounded-md disabled:bg-gray-400 ml-2">Call</button>
                   </div>
                 </div>
 

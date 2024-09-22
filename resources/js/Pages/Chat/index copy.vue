@@ -2,9 +2,13 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ThreeDodIcon from '@/Components/Chat/ThreeDodIcon.vue';
 import ChatHeader from '@/Pages/Chat/Partial/ChatHeader.vue';
-import axios from "axios";
 import { ref } from 'vue';
+import { Peer } from "https://esm.sh/peerjs@1.5.2?bundle-deps";
 
+const props = defineProps({
+    users: Array,
+    authUserId: Number
+});
 function logout2() {
     console.log('logout')
 }
@@ -12,75 +16,98 @@ function fileLink(file) {
     return '/assets/' + file;
 }
 
-
-
-//recive users data as an arry in props so that vue component access array data
-const props = defineProps({
-    users: Array,
-    authUserId: Number
-})
-
 const selectedUser = ref(null);
-
 const isChatOpen = ref(false);
+const peer = new Peer();
+
+let localStream;
+let remoteStream;
 
 const openChat = (user) => {
-    selectedUser.value = user;  //ekhanea ref use korsiee tokhon user data se handle korsea sei jonne selectedUser.value.id evabe likhetea hossea nah templater moddhea.
+    selectedUser.value = user;
     isChatOpen.value = true;
+    startVideoStream();
 };
 
 const chatClose = () => {
     isChatOpen.value = false;
-}
-
-// Function to send a new message
-window.sendMessage = function () {
-    const messageInput = document.getElementById('messageInput');
-    const message = messageInput.value;
-    const receiverId = selectedUser.value.id;
-    // console.log(userId);
-    axios.post('/chat/send-message', {
-        message: message,
-        receiver_id: receiverId
-    })
-        .then(response => {
-            console.log(response.data);
-            // Clear the input field after sending
-            messageInput.value = '';
-        })
-        .catch(error => console.error(error));
-    console.log('sent message');
+    stopVideoStream();
 };
 
-const authUserId = props.authUserId;
-// console.log(authUserId);
+peer.on('open', (id) => {
+    const peeridconnza = document.getElementById('peeridconnz');
+    peeridconnza.innerText = id;
+    console.log('My peer ID is: ' + id);
+});
 
-window.Echo.private('chatroom.' + authUserId)  // ey sob somoy listen korea bosea asea k kokhon chatroom.1 ekisu dibe sathe sathea se show korbea. 
-    .listen('MessageSent', (e) => {
-        console.log(e.message);
-        // Append the new message to the chatroom
-        const messages = document.getElementById('messages');
-        const messageElement = document.createElement('p');
-        messageElement.innerText = e.message;
-        messages.appendChild(messageElement);
+peer.on('call', (call) => {
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then((stream) => {
+            localStream = stream;
+            call.answer(stream); // Answer the call with an A/V stream.
+            call.on('stream', (remoteStream) => {
+                // Show stream in some video/canvas element.
+                const video = document.querySelector('.remote-video');
+                video.srcObject = remoteStream;
+                video.play();
+            });
+        })
+        .catch((err) => {
+            console.error('Failed to get local stream', err);
+        });
+});
+
+window.connectToPeer = function () {
+    const peerIdEl = document.getElementById('connectpeerid');
+    const receive = peerIdEl.value;
+    console.log("Connecting to peer: " + receive);
+    const conn = peer.connect(receive);
+
+    conn.on('open', () => {
+        console.log('Connected to peer: ' + conn.peer);
+        // Request video call
+        startVideoStream();
+        const call = peer.call(conn.peer, localStream);
+        call.on('stream', (remoteStream) => {
+            // Show stream in some video/canvas element.
+            const video = document.querySelector('.remote-video');
+            video.srcObject = remoteStream;
+            video.play();
+        });
     });
-// window.Echo.channel('chatroom.1')
-//     .listen('MessageSent', (e) => {
-//         console.log(e.message);
-//         // Append the new message to the chatroom
-//         const messages = document.getElementById('messages');
-//         const messageElement = document.createElement('p');
-//         messageElement.innerText = e.message;
-//         messages.appendChild(messageElement);
-//     });
+};
 
+function startVideoStream() {
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then((stream) => {
+            localStream = stream;
+            const video = document.querySelector('.local-video');
+            video.srcObject = stream;
+            video.play();
+        })
+        .catch((err) => {
+            console.error('Failed to get local stream', err);
+        });
+}
+
+function stopVideoStream() {
+    if (localStream) {
+        localStream.getTracks().forEach((track) => {
+            track.stop();
+        });
+    }
+}
+
+window.sendCall = function () {
+    // Implement calling functionality here
+};
 </script>
 
 <template>
     <AppLayout title="ChatApp">
         <template #header>
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                chat Current user Id{{ authUserId }}
+                video Chat connection Id <p id="peeridconnz" style="color: brown;"></p>
             </h2>
         </template>
 
@@ -153,24 +180,32 @@ window.Echo.private('chatroom.' + authUserId)  // ey sob somoy listen korea bose
                                             </div>
                                             <three-dod-icon class="cursor-pointer w-3 h-3"></three-dod-icon>
                                         </div>
-                                        <div class="flex items-center justify-end mb-4">
-                                            <three-dod-icon class="cursor-pointer w-3 h-3"></three-dod-icon>
-                                            <div id="messages" class="relative group text-sm p-2 shadow bg-indigo-100 rounded-md max-w-xs">
-                                                message show here
-                                                <div class="absolute top-0.5 -translate-y-0.5 right-full hidden group-hover:block mr-1 mt-1 bg-gray-600 py-1 px-1.5 rounded z-50 text-white w-max">
-                                                    12:22
-                                                </div>
-                                            </div>
-                                            <img :src="fileLink('me.jpg')" alt="user" class="w-6 h-6 rounded-full border-2 border-blue-400 mr-1 ml-1">
 
+                                        <div class="flex items-center mb-4">
+                                            <img :src="fileLink('me.jpg')" alt="user" class="w-6 h-6 rounded-full border-2 border-blue-400 mr-1">
+                                            <div class="relative group text-sm p-2 shadow bg-white rounded-md max-w-xs">
+                                                my Peer ID is <p id="peerIdShow"></p>
+
+                                            </div>
                                         </div>
+
+                                        <!-- video will show here  -->
+                                        <div class="flex items-center justify-end mb-4">
+                                            <video class="local-video" autoplay muted></video>
+                                        </div>
+                                        <div class="flex items-center justify-end mb-4">
+                                            <video class="remote-video" autoplay></video>
+                                        </div>
+
+
                                     </div>
 
                                     <!-- chat footer  -->
                                     <div class="flex items-center p-5 bg-white rounded-bl-md rounded-br-md">
-                                        <input id="messageInput" type="text" placeholder="write message" class="w-full p-2 rounded-md border border-gray-300 focus:outline-non focus:ring focus:border-blue-400">
+                                        <input id="connectpeerid" type="text" placeholder="connect-to-peer" class="w-full p-2 rounded-md border border-gray-300 focus:outline-non focus:ring focus:border-blue-400">
 
-                                        <button onclick="sendMessage()" class="bg-blue-600 text-white px-4 py-2 rounded-md disabled:bg-gray-400 ml-2">send</button>
+                                        <button onclick="connectToPeer()" class="bg-blue-600 text-white px-4 py-2 rounded-md disabled:bg-gray-400 ml-2">Connect</button>
+                                        <button onclick="sendCall()" class="bg-blue-600 text-white px-4 py-2 rounded-md disabled:bg-gray-400 ml-2">Call</button>
                                     </div>
                                 </div>
 

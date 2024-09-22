@@ -58,6 +58,12 @@ const logout = () => {
                                 <NavLink :href="route('video.chat')">
                                     video
                                 </NavLink>
+                                <NavLink :href="route('new.chat')">
+                                    new chat
+                                </NavLink>
+                                <NavLink :href="route('audio.call')">
+                                    Audio Call
+                                </NavLink>
                             </div>
                         </div>
 
